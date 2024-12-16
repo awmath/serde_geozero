@@ -5,6 +5,10 @@
 //! This crate provides functionality to convert between geospatial data sources and
 //! Rust types using serde's serialization framework and geozero's processing capabilities.
 //!
+//! ## Disclaimer ##
+//! This isn't a fully fledged cargo crate as it's still missing some functionality it claims to
+//! provide (serialization).
+//!
 //! ## Features
 //!
 //! - Deserialize from various geospatial formats (GeoJSON, FlatGeobuf, etc.) into Rust structs
