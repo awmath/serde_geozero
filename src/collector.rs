@@ -5,7 +5,7 @@
 //!
 //! # Example
 //!
-//! Reading features from GeoJSON:
+//! Reading features from `GeoJSON`:
 //!
 //! ```rust
 //! use std::collections::HashMap;
@@ -45,7 +45,7 @@
 //!
 //! ```
 //!
-//! Reading features from FlatGeoBuf
+//! Reading features from ``FlatGeoBuf``
 //!
 //! ```rust
 //! use flatgeobuf:: FgbReader;
@@ -67,19 +67,17 @@
 //!
 //! let name  = feature.properties.get("name").unwrap().as_str().unwrap();
 //! ```
-
+#![allow(clippy::many_single_char_names)]
 use crate::ser::ColumnValueSerializer;
-use std::{collections::HashMap, hash::Hash, process};
+use std::collections::HashMap;
 
-use anyhow::Context;
 use geo::Geometry;
 use geozero::{
-    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureAccess, FeatureProcessor,
-    GeomProcessor, GeozeroDatasource, GeozeroGeometry, PropertyProcessor,
+    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureProcessor, GeomProcessor,
+    PropertyProcessor,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_with::serde_as;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GeozeroFeature {
@@ -96,6 +94,7 @@ pub struct GeozeroCollector {
 }
 
 impl GeozeroCollector {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             features: Vec::new(),
@@ -114,7 +113,7 @@ impl Default for GeozeroCollector {
 impl PropertyProcessor for GeozeroCollector {
     fn property(
         &mut self,
-        idx: usize,
+        _idx: usize,
         name: &str,
         value: &ColumnValue,
     ) -> geozero::error::Result<bool> {
@@ -313,8 +312,7 @@ impl FeatureProcessor for GeozeroCollector {
         Ok(())
     }
 
-    fn feature_end(&mut self, idx: u64) -> geozero::error::Result<()> {
-        let features = &self.features;
+    fn feature_end(&mut self, _idx: u64) -> geozero::error::Result<()> {
         self.features.push(GeozeroFeature {
             geometry: self
                 .current_geometry
@@ -334,8 +332,9 @@ impl FeatureProcessor for GeozeroCollector {
 #[cfg(test)]
 mod test {
 
+    use approx::assert_relative_eq;
     use geo::Geometry;
-    use geozero::{GeozeroDatasource, ToWkt};
+    use geozero::GeozeroDatasource;
 
     use crate::collector::GeozeroCollector;
 
@@ -380,8 +379,8 @@ mod test {
         let feature = &collector.features[0];
         match &feature.geometry {
             Geometry::Point(point) => {
-                assert_eq!(point.x(), 102.0);
-                assert_eq!(point.y(), 0.5);
+                assert_relative_eq!(point.x(), 102.0);
+                assert_relative_eq!(point.y(), 0.5);
             }
             _ => panic!("Expected Point geometry"),
         }
@@ -398,8 +397,8 @@ mod test {
         let feature = &collector.features[1];
         match &feature.geometry {
             Geometry::Point(point) => {
-                assert_eq!(point.x(), 103.0);
-                assert_eq!(point.y(), 1.5);
+                assert_relative_eq!(point.x(), 103.0);
+                assert_relative_eq!(point.y(), 1.5);
             }
             _ => panic!("Expected Point geometry"),
         }

@@ -1,4 +1,4 @@
-use std::{error, fmt::Display};
+use std::fmt::Display;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

@@ -1,9 +1,10 @@
 use geozero::ColumnValue;
 use serde::ser;
 
+
 pub struct ColumnValueSerializer<'a>(pub &'a ColumnValue<'a>);
 
-impl<'a> ser::Serialize for ColumnValueSerializer<'a> {
+impl ser::Serialize for ColumnValueSerializer<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -20,9 +21,8 @@ impl<'a> ser::Serialize for ColumnValueSerializer<'a> {
             ColumnValue::ULong(val) => serializer.serialize_u64(*val),
             ColumnValue::Float(val) => serializer.serialize_f32(*val),
             ColumnValue::Double(val) => serializer.serialize_f64(*val),
-            ColumnValue::String(val) => serializer.serialize_str(val),
-            ColumnValue::Json(val) => serializer.serialize_str(val),
-            ColumnValue::DateTime(val) => serializer.serialize_str(&val.to_string()),
+            ColumnValue::String(val) | ColumnValue::Json(val) => serializer.serialize_str(val),
+            ColumnValue::DateTime(val) => serializer.serialize_str(val.as_ref()),
             ColumnValue::Binary(val) => serializer.serialize_bytes(val),
         }
     }

@@ -11,14 +11,14 @@
 //!
 //! ## Features
 //!
-//! - Deserialize from various geospatial formats (GeoJSON, FlatGeobuf, etc.) into Rust structs
+//! - Deserialize from various geospatial formats (`GeoJSON`, `FlatGeobuf`, etc.) into Rust structs
 //! - Collect geometry and property data from geospatial sources
 //! - Serialize geometry data into different formats
 //!
 //! ## Main Components
 //!
 //! - [`collector::GeozeroCollector`] - Collects geometry and property data from geospatial sources
-//! - [`from_datasource`] - Helper function to deserialize data from any GeozeroDatasource
+//! - [`from_datasource`] - Helper function to deserialize data from any `GeozeroDatasource`
 //! - [`error::Error`] - Custom error types for the library
 //!
 //! ## Example
@@ -53,14 +53,16 @@
 //!
 //! ## TODO:
 //!  - Serialization
-//!  - Deserialization for non GeozeroDatasource
+//!  - Deserialization for non `GeozeroDatasource`
 //!
 //! ## Modules
 //!
-//! - [`collector`] - Contains the GeozeroCollector implementation
+//! - [`collector`] - Contains the `GeozeroCollector` implementation
 //! - [`de`] - Deserialization functionality
 //! - [`error`] - Error types and handling
 //! - [`ser`] - Serialization functionality
+
+#[allow(clippy::module_name_repetitions)]
 pub mod collector;
 pub mod de;
 pub mod error;

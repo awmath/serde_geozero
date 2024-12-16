@@ -1,30 +1,16 @@
-use std::{collections::HashMap, marker::PhantomData};
+use geozero::GeozeroDatasource;
+use serde::Deserialize;
 
-use geozero::{
-    ColumnValue, FeatureAccess, FeatureProcessor, GeomProcessor, GeozeroDatasource,
-    GeozeroGeometry, PropertyProcessor,
-};
-use serde::{de, forward_to_deserialize_any, Deserialize, Deserializer};
-use serde_hjson::Value;
+use crate::{collector::GeozeroCollector, error::Result};
 
-use crate::{
-    collector::{self, GeozeroCollector, GeozeroFeature},
-    error::{Error, Result},
-    ser::ColumnValueSerializer,
-};
-
-pub struct GeozeroDeserializer {
-    collector: GeozeroCollector,
-}
-
-/// Deserializes data from a GeozeroDatasource into a type that implements Deserialize.
+/// Deserializes data from a `GeozeroDatasource` into a type that implements Deserialize.
 ///
-/// This function takes any GeozeroDatasource (like GeoJSON, FlatGeobuf, etc.) and converts
+/// This function takes any `GeozeroDatasource` (like `GeoJSON`, `FlatGeobuf`, etc.) and converts
 /// its features into your custom types that implement Deserialize.
 ///
 /// # Examples
 ///
-/// Reading GeoJSON into custom structs:
+/// Reading `GeoJSON` into custom structs:
 /// ```
 /// use serde::Deserialize;
 /// use geo::Geometry;
@@ -55,7 +41,7 @@ pub struct GeozeroDeserializer {
 /// assert_eq!(cities.first().unwrap().name, "Berlin");
 /// ```
 ///
-/// Reading FlatGeobuf features:
+/// Reading `FlatGeobuf` features:
 /// ```
 /// use serde::Deserialize;
 /// use geo::Geometry;
@@ -96,6 +82,7 @@ pub fn from_datasource<'de, T: Deserialize<'de>, S: GeozeroDatasource>(
 #[cfg(test)]
 mod test {
     use super::*;
+    use approx::assert_relative_eq;
     use flatgeobuf::FgbReader;
     use geo::Geometry;
     use serde::{Deserialize, Serialize};
@@ -169,8 +156,8 @@ mod test {
         assert_eq!(features[0].title, "Test Point");
         match &features[0].geometry {
             Geometry::Point(point) => {
-                assert_eq!(point.x(), 102.0);
-                assert_eq!(point.y(), 0.5);
+                assert_relative_eq!(point.x(), 102.0);
+                assert_relative_eq!(point.y(), 0.5);
             }
             _ => panic!("Expected Point geometry"),
         }
@@ -179,8 +166,8 @@ mod test {
         assert_eq!(features[1].title, "Another Point");
         match &features[1].geometry {
             Geometry::Point(point) => {
-                assert_eq!(point.x(), 103.0);
-                assert_eq!(point.y(), 1.5);
+                assert_relative_eq!(point.x(), 103.0);
+                assert_relative_eq!(point.y(), 1.5);
             }
             _ => panic!("Expected Point geometry"),
         }
