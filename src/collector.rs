@@ -73,8 +73,7 @@ use std::collections::HashMap;
 
 use geo::Geometry;
 use geozero::{
-    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureProcessor, GeomProcessor,
-    PropertyProcessor,
+    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureProcessor, GeomProcessor, PropertyProcessor,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -339,7 +338,7 @@ mod test {
     use crate::collector::GeozeroCollector;
 
     #[test]
-    fn test_geojson() -> geozero::error::Result<()> {
+    fn test_from_geojson() -> geozero::error::Result<()> {
         let geojson = r#"{
             "type": "FeatureCollection",
             "features": [

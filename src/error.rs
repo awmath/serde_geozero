@@ -6,7 +6,7 @@ pub enum Error {
     GeozeroError(#[from] geozero::error::GeozeroError),
 
     #[error("Serde error.")]
-    SerdeError(#[from] serde_json::Error),
+    SerdeError(#[from] serde_json::error::Error),
 
     #[error("An error happend.")]
     Message(String),

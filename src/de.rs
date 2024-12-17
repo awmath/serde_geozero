@@ -1,7 +1,10 @@
 use geozero::GeozeroDatasource;
 use serde::Deserialize;
 
-use crate::{collector::GeozeroCollector, error::Result};
+use crate::{
+    collector::GeozeroCollector,
+    error::{Error, Result},
+};
 
 /// Deserializes data from a `GeozeroDatasource` into a type that implements Deserialize.
 ///
@@ -70,13 +73,19 @@ use crate::{collector::GeozeroCollector, error::Result};
 ///
 pub fn from_datasource<'de, T: Deserialize<'de>, S: GeozeroDatasource>(
     processor: &mut S,
-) -> Result<T> {
+) -> Result<Vec<T>> {
     let mut collector = GeozeroCollector::new();
     processor.process(&mut collector)?;
 
-    let in_value = serde_json::to_value(collector.features)?;
-
-    Ok(T::deserialize(in_value)?)
+    collector
+        .features
+        .into_iter()
+        .map(|feature| {
+            serde_json::to_value(feature)
+                .and_then(T::deserialize)
+                .map_err(Error::SerdeError)
+        })
+        .collect()
 }
 
 #[cfg(test)]
