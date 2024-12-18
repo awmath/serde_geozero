@@ -68,12 +68,13 @@
 //! let name  = feature.properties.get("name").unwrap().as_str().unwrap();
 //! ```
 #![allow(clippy::many_single_char_names)]
-use crate::ser::ColumnValueSerializer;
-use std::collections::HashMap;
+use crate::{error::Error, ser::ColumnValueSerializer};
+use std::{collections::HashMap, marker::PhantomData};
 
 use geo::Geometry;
 use geozero::{
-    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureProcessor, GeomProcessor, PropertyProcessor,
+    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureProcessor, GeomProcessor,
+    PropertyProcessor,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -85,31 +86,55 @@ pub struct GeozeroFeature {
     pub properties: HashMap<String, Value>,
 }
 
-pub struct GeozeroCollector {
-    pub features: Vec<GeozeroFeature>,
+impl<'de> serde::de::Deserializer<'de> for GeozeroFeature {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        // Convert GeozeroFeature to Value first
+        let value = serde_json::to_value(&self).map_err(Error::SerdeError)?;
+
+        // Then use Value's deserializer
+        Ok(value.deserialize_any(visitor)?)
+    }
+
+    // Forward all other methods to Value's deserializer
+    serde::forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+        bytes byte_buf option unit unit_struct newtype_struct seq tuple
+        tuple_struct map struct enum identifier ignored_any
+    }
+}
+
+pub struct GeozeroCollector<'de, T: Deserialize<'de>> {
+    pub features: Vec<T>,
 
     current_geometry: GeoWriter,
     current_properties: HashMap<String, Value>,
+    _phantom: &'de PhantomData<()>,
 }
 
-impl GeozeroCollector {
+impl<'de, T: Deserialize<'de>> GeozeroCollector<'de, T> {
     #[must_use]
     pub fn new() -> Self {
         Self {
             features: Vec::new(),
             current_geometry: GeoWriter::new(),
             current_properties: HashMap::new(),
+            _phantom: &PhantomData,
         }
     }
 }
 
-impl Default for GeozeroCollector {
+impl<'de, T: Deserialize<'de>> Default for GeozeroCollector<'de, T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl PropertyProcessor for GeozeroCollector {
+impl<'de, T: Deserialize<'de>> PropertyProcessor for GeozeroCollector<'de, T> {
     fn property(
         &mut self,
         _idx: usize,
@@ -125,7 +150,7 @@ impl PropertyProcessor for GeozeroCollector {
     }
 }
 
-impl GeomProcessor for GeozeroCollector {
+impl<'de, T: Deserialize<'de>> GeomProcessor for GeozeroCollector<'de, T> {
     fn dimensions(&self) -> geozero::CoordDimensions {
         self.current_geometry.dimensions()
     }
@@ -305,20 +330,21 @@ impl GeomProcessor for GeozeroCollector {
     }
 }
 
-impl FeatureProcessor for GeozeroCollector {
+impl<'de, T: Deserialize<'de>> FeatureProcessor for GeozeroCollector<'de, T> {
     fn properties_begin(&mut self) -> geozero::error::Result<()> {
         self.current_properties = HashMap::new();
         Ok(())
     }
 
     fn feature_end(&mut self, _idx: u64) -> geozero::error::Result<()> {
-        self.features.push(GeozeroFeature {
+        let geozero_feature = GeozeroFeature {
             geometry: self
                 .current_geometry
                 .take_geometry()
                 .expect("No geometry found."),
             properties: std::mem::take(&mut self.current_properties),
-        });
+        };
+        self.features.push(T::deserialize(geozero_feature)?);
         Ok(())
     }
 

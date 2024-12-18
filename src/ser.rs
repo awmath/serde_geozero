@@ -6,7 +6,7 @@ use geozero::{
 use serde::{ser, Deserialize};
 
 use crate::{
-    collector::GeozeroFeature,
+    de::GeozeroFeature,
     error::{Error, Result},
 };
 use serde_json::Value as JsonValue;
@@ -105,19 +105,19 @@ mod test {
     use geo::point;
     use geozero::geojson::GeoJsonWriter;
 
-    use crate::collector::GeozeroFeature;
+    use crate::de::GeozeroFeature;
 
     use super::to_geozero_datasource;
 
     #[test]
     fn test_to_geojson() {
-        let data = GeozeroFeature {
-            geometry: (point! { x: 123.4, y: 345.6 }).into(),
-            properties: HashMap::from_iter(vec![
+        let data = GeozeroFeature::new(
+            (point! { x: 123.4, y: 345.6 }).into(),
+            HashMap::from_iter(vec![
                 ("prop1".to_string(), serde_json::to_value(1.).unwrap()),
                 ("prop2".to_string(), serde_json::to_value("123").unwrap()),
             ]),
-        };
+        );
 
         let mut out = Vec::new();
 

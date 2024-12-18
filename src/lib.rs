@@ -24,11 +24,14 @@
 //! ## Example
 //!
 //! ```rust
-//! use serde::Deserialize;
+//! use serde::{Deserialize, Serialize};
 //! use geo::Geometry;
 //! use serde_geozero::from_datasource;
+//! use std::str::from_utf8;
+//! use serde_geozero::ser::to_geozero_datasource;
+//! use geozero::geojson::GeoJsonWriter;
 //!
-//! #[derive(Deserialize)]
+//! #[derive(Deserialize, Serialize)]
 //! struct City {
 //!     geometry: Geometry,
 //!     name: String,
@@ -49,6 +52,17 @@
 //!
 //! let mut reader = geozero::geojson::GeoJsonReader(geojson.as_bytes());
 //! let cities: Vec<City> = from_datasource(&mut reader).unwrap();
+//!
+//!
+//! let mut out = Vec::new();
+//!
+//! let mut writer = GeoJsonWriter::new(&mut out);
+//!
+//! assert!(to_geozero_datasource(cities.as_slice(), &mut writer).is_ok());
+//! assert_eq!(
+//!     from_utf8(out.as_slice()).unwrap().to_string().retain(|c| !c.is_whitespace()),
+//!     geojson.to_string().retain(|c| !c.is_whitespace())
+//!     );
 //! ```
 //!
 //! ## TODO:
@@ -63,7 +77,6 @@
 //! - [`ser`] - Serialization functionality
 
 #[allow(clippy::module_name_repetitions)]
-pub mod collector;
 pub mod de;
 pub mod error;
 pub mod ser;
