@@ -58,7 +58,8 @@
 //!
 //! let mut writer = GeoJsonWriter::new(&mut out);
 //!
-//! assert!(to_geozero_datasource(cities.as_slice(), &mut writer).is_ok());
+//! let result = to_geozero_datasource(cities.as_slice(), &mut writer);
+//! assert!(result.is_ok(), "{}", result.unwrap_err());
 //! assert_eq!(
 //!     from_utf8(out.as_slice()).unwrap().to_string().retain(|c| !c.is_whitespace()),
 //!     geojson.to_string().retain(|c| !c.is_whitespace())
@@ -82,3 +83,4 @@ pub mod error;
 pub mod ser;
 
 pub use de::from_datasource;
+pub use ser::to_geozero_datasource;

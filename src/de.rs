@@ -1,11 +1,12 @@
 #![allow(clippy::many_single_char_names)]
-use std::{collections::HashMap, marker::PhantomData};
+use std::marker::PhantomData;
 
 use geo::Geometry;
 use geozero::{
-    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureProcessor, GeomProcessor,
-    GeozeroDatasource, PropertyProcessor,
+    error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureAccess, FeatureProcessor,
+    FeatureProperties, GeomProcessor, GeozeroDatasource, PropertyProcessor,
 };
+use hashbrown::HashMap;
 use serde::{
     de::{value::StringDeserializer, MapAccess},
     Deserialize, Serialize,
@@ -85,18 +86,250 @@ use crate::{
 pub fn from_datasource<'de, T: Deserialize<'de>, S: GeozeroDatasource>(
     processor: &mut S,
 ) -> Result<Vec<T>> {
-    let mut collector = GeozeroCollector::new();
+    let mut collector = DataSourceDeserializer::new();
     processor.process(&mut collector)?;
 
     Ok(collector.features)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GeozeroFeature {
+pub struct DataSourceDeserializer<'de, T: Deserialize<'de>> {
+    pub features: Vec<T>,
+
+    current_feature: GeozeroFeature,
+    _phantom: &'de PhantomData<()>,
+}
+
+impl<'de, T: Deserialize<'de>> DataSourceDeserializer<'de, T> {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            features: Vec::new(),
+            current_feature: GeozeroFeature::new(),
+            _phantom: &PhantomData,
+        }
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Default for DataSourceDeserializer<'de, T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<'de, T: Deserialize<'de>> PropertyProcessor for DataSourceDeserializer<'de, T> {
+    fn property(
+        &mut self,
+        idx: usize,
+        name: &str,
+        value: &ColumnValue,
+    ) -> geozero::error::Result<bool> {
+        self.current_feature.property(idx, name, value)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> GeomProcessor for DataSourceDeserializer<'de, T> {
+    fn dimensions(&self) -> geozero::CoordDimensions {
+        self.current_feature.dimensions()
+    }
+
+    fn multi_dim(&self) -> bool {
+        self.current_feature.multi_dim()
+    }
+
+    fn srid(&mut self, srid: Option<i32>) -> geozero::error::Result<()> {
+        self.current_feature.srid(srid)
+    }
+
+    fn xy(&mut self, x: f64, y: f64, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.xy(x, y, idx)
+    }
+
+    fn coordinate(
+        &mut self,
+        x: f64,
+        y: f64,
+        z: Option<f64>,
+        m: Option<f64>,
+        t: Option<f64>,
+        tm: Option<u64>,
+        idx: usize,
+    ) -> geozero::error::Result<()> {
+        self.current_feature.coordinate(x, y, z, m, t, tm, idx)
+    }
+
+    fn empty_point(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.empty_point(idx)
+    }
+
+    fn point_begin(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.point_begin(idx)
+    }
+
+    fn point_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.point_end(idx)
+    }
+
+    fn multipoint_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multipoint_begin(size, idx)
+    }
+
+    fn multipoint_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multipoint_end(idx)
+    }
+
+    fn linestring_begin(
+        &mut self,
+        tagged: bool,
+        size: usize,
+        idx: usize,
+    ) -> geozero::error::Result<()> {
+        self.current_feature.linestring_begin(tagged, size, idx)
+    }
+
+    fn linestring_end(&mut self, tagged: bool, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.linestring_end(tagged, idx)
+    }
+
+    fn multilinestring_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multilinestring_begin(size, idx)
+    }
+
+    fn multilinestring_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multilinestring_end(idx)
+    }
+
+    fn polygon_begin(
+        &mut self,
+        tagged: bool,
+        size: usize,
+        idx: usize,
+    ) -> geozero::error::Result<()> {
+        self.current_feature.polygon_begin(tagged, size, idx)
+    }
+
+    fn polygon_end(&mut self, tagged: bool, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.polygon_end(tagged, idx)
+    }
+
+    fn multipolygon_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multipolygon_begin(size, idx)
+    }
+
+    fn multipolygon_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multipolygon_end(idx)
+    }
+
+    fn geometrycollection_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.geometrycollection_begin(size, idx)
+    }
+
+    fn geometrycollection_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.geometrycollection_end(idx)
+    }
+
+    fn circularstring_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.circularstring_begin(size, idx)
+    }
+
+    fn circularstring_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.circularstring_end(idx)
+    }
+
+    fn compoundcurve_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.compoundcurve_begin(size, idx)
+    }
+
+    fn compoundcurve_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.compoundcurve_end(idx)
+    }
+
+    fn curvepolygon_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.curvepolygon_begin(size, idx)
+    }
+
+    fn curvepolygon_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.curvepolygon_end(idx)
+    }
+
+    fn multicurve_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multicurve_begin(size, idx)
+    }
+
+    fn multicurve_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multicurve_end(idx)
+    }
+
+    fn multisurface_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multisurface_begin(size, idx)
+    }
+
+    fn multisurface_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.multisurface_end(idx)
+    }
+
+    fn triangle_begin(
+        &mut self,
+        tagged: bool,
+        size: usize,
+        idx: usize,
+    ) -> geozero::error::Result<()> {
+        self.current_feature.triangle_begin(tagged, size, idx)
+    }
+
+    fn triangle_end(&mut self, tagged: bool, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.triangle_end(tagged, idx)
+    }
+
+    fn polyhedralsurface_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.polyhedralsurface_begin(size, idx)
+    }
+
+    fn polyhedralsurface_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.polyhedralsurface_end(idx)
+    }
+
+    fn tin_begin(&mut self, size: usize, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.tin_begin(size, idx)
+    }
+
+    fn tin_end(&mut self, idx: usize) -> geozero::error::Result<()> {
+        self.current_feature.tin_end(idx)
+    }
+
+    fn pre_process_xy<F: Fn(&mut f64, &mut f64)>(
+        self,
+        transform_xy: F,
+    ) -> geozero::WrappedXYProcessor<Self, F>
+    where
+        Self: Sized,
+    {
+        geozero::WrappedXYProcessor::new(self, transform_xy)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> FeatureProcessor for DataSourceDeserializer<'de, T> {
+    fn feature_begin(&mut self, _idx: u64) -> geozero::error::Result<()> {
+        self.current_feature = GeozeroFeature::new();
+        Ok(())
+    }
+
+    fn feature_end(&mut self, _idx: u64) -> geozero::error::Result<()> {
+        let geo_feature: Feature = Feature::try_from(&mut self.current_feature)?;
+        self.features.push(
+            T::deserialize(geo_feature).map_err(|err| GeozeroError::Feature(err.to_string()))?,
+        );
+        Ok(())
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Feature {
     pub geometry: Geometry,
+
     #[serde(flatten)]
     pub properties: HashMap<String, Value>,
 
+    // fields necessary for serde
     #[serde(skip)]
     map_keys: Vec<String>,
 
@@ -104,7 +337,7 @@ pub struct GeozeroFeature {
     current_col: Option<String>,
 }
 
-impl GeozeroFeature {
+impl Feature {
     #[must_use]
     pub fn new(geometry: Geometry, properties: HashMap<String, Value>) -> Self {
         let map_keys = properties.keys().cloned().collect();
@@ -118,7 +351,44 @@ impl GeozeroFeature {
     }
 }
 
-impl<'de> serde::de::Deserializer<'de> for GeozeroFeature {
+pub struct GeozeroFeature {
+    current_properties: HashMap<String, Value>,
+    current_geometry: GeoWriter,
+}
+
+impl GeozeroFeature {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            current_properties: HashMap::new(),
+            current_geometry: GeoWriter::new(),
+        }
+    }
+}
+
+impl Default for GeozeroFeature {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TryFrom<&mut GeozeroFeature> for Feature {
+    type Error = GeozeroError;
+
+    fn try_from(value: &mut GeozeroFeature) -> std::result::Result<Self, Self::Error> {
+        Ok(Feature::new(
+            value
+                .current_geometry
+                .take_geometry()
+                .ok_or(GeozeroError::Geometry(
+                    "Could not fetch geometry for feature".to_string(),
+                ))?,
+            std::mem::take(&mut value.current_properties),
+        ))
+    }
+}
+
+impl<'de> serde::de::Deserializer<'de> for Feature {
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
@@ -138,7 +408,7 @@ impl<'de> serde::de::Deserializer<'de> for GeozeroFeature {
 
 const GEOMETRY_COL: &str = "geometry";
 
-impl<'de> MapAccess<'de> for GeozeroFeature {
+impl<'de> MapAccess<'de> for Feature {
     type Error = Error;
 
     fn next_key_seed<K>(&mut self, seed: K) -> std::result::Result<Option<K::Value>, Self::Error>
@@ -183,33 +453,7 @@ impl<'de> MapAccess<'de> for GeozeroFeature {
     }
 }
 
-pub struct GeozeroCollector<'de, T: Deserialize<'de>> {
-    pub features: Vec<T>,
-
-    current_geometry: GeoWriter,
-    current_properties: HashMap<String, Value>,
-    _phantom: &'de PhantomData<()>,
-}
-
-impl<'de, T: Deserialize<'de>> GeozeroCollector<'de, T> {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            features: Vec::new(),
-            current_geometry: GeoWriter::new(),
-            current_properties: HashMap::new(),
-            _phantom: &PhantomData,
-        }
-    }
-}
-
-impl<'de, T: Deserialize<'de>> Default for GeozeroCollector<'de, T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<'de, T: Deserialize<'de>> PropertyProcessor for GeozeroCollector<'de, T> {
+impl PropertyProcessor for GeozeroFeature {
     fn property(
         &mut self,
         _idx: usize,
@@ -225,7 +469,7 @@ impl<'de, T: Deserialize<'de>> PropertyProcessor for GeozeroCollector<'de, T> {
     }
 }
 
-impl<'de, T: Deserialize<'de>> GeomProcessor for GeozeroCollector<'de, T> {
+impl GeomProcessor for GeozeroFeature {
     fn dimensions(&self) -> geozero::CoordDimensions {
         self.current_geometry.dimensions()
     }
@@ -405,40 +649,58 @@ impl<'de, T: Deserialize<'de>> GeomProcessor for GeozeroCollector<'de, T> {
     }
 }
 
-impl<'de, T: Deserialize<'de>> FeatureProcessor for GeozeroCollector<'de, T> {
-    fn properties_begin(&mut self) -> geozero::error::Result<()> {
+impl FeatureProcessor for GeozeroFeature {
+    fn feature_begin(&mut self, idx: u64) -> geozero::error::Result<()> {
+        self.current_geometry = GeoWriter::new();
         self.current_properties = HashMap::new();
         Ok(())
     }
+}
 
-    fn feature_end(&mut self, _idx: u64) -> geozero::error::Result<()> {
-        let geozero_feature = GeozeroFeature::new(
-            self.current_geometry
-                .take_geometry()
-                .expect("No geometry found."),
-            std::mem::take(&mut self.current_properties),
-        );
-        self.features.push(
-            T::deserialize(geozero_feature)
-                .map_err(|err| GeozeroError::Feature(err.to_string()))?,
-        );
-        Ok(())
-    }
+/// .
+///
+/// # Errors
+///
+/// This function will return an error if .
+pub fn feature_to_struct<'de, S: FeatureAccess, T: Deserialize<'de>>(feature: &S) -> Result<T> {
+    let mut geozero_feature = GeozeroFeature::new();
+    feature.process(&mut geozero_feature, 0)?;
 
-    fn geometry_begin(&mut self) -> geozero::error::Result<()> {
-        self.current_geometry = GeoWriter::new();
-        Ok(())
-    }
+    let feature: Feature = Feature::try_from(&mut geozero_feature)?;
+
+    T::deserialize(feature)
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use approx::assert_relative_eq;
-    use flatgeobuf::FgbReader;
+    use flatgeobuf::{FallibleStreamingIterator, FgbFeature, FgbReader};
     use geo::Geometry;
     use serde::{Deserialize, Serialize};
     use std::fs::File;
+
+    #[test]
+    fn test_flatgeobuf_feature() -> anyhow::Result<()> {
+        #[derive(Debug, Deserialize)]
+        struct Country {
+            geometry: Geometry,
+            name: String,
+            id: String,
+        }
+
+        let f = File::open("test-data/countries.fgb")?;
+        let reader = FgbReader::open(f)?;
+        let mut feature_iter = reader.select_all()?;
+        let fgb_feature = feature_iter.next()?.unwrap();
+
+        let first: Country = feature_to_struct(fgb_feature)?;
+        assert_eq!(first.name, "Antarctica");
+        assert_eq!(first.id, "ATA");
+        assert!(matches!(first.geometry, Geometry::MultiPolygon(_)));
+
+        Ok(())
+    }
 
     #[test]
     fn test_flatgeobuf() -> anyhow::Result<()> {

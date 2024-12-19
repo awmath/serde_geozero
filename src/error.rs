@@ -5,7 +5,7 @@ pub enum Error {
     #[error("Error while processing the geozero source.")]
     GeozeroError(#[from] geozero::error::GeozeroError),
 
-    #[error("Serde error.")]
+    #[error(transparent)]
     SerdeError(#[from] serde_json::error::Error),
 
     #[error("An error happend.")]
