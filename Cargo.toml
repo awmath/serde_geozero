@@ -2,6 +2,10 @@
 name = "serde_geozero"
 version = "0.1.0"
 edition = "2021"
+license-file = "LICENSE"
+homepage = "https://github.com/awmath/serde_geozero"
+repository = "https://github.com/awmath/serde_geozero"
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.94"
