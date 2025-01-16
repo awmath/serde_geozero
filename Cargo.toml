@@ -1,5 +1,6 @@
 [package]
 name = "serde_geozero"
+description = "A Rust library for serializing and deserializing geospatial data using serde and geozero."
 version = "0.1.0"
 edition = "2021"
 license-file = "LICENSE"
