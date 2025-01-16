@@ -5,7 +5,7 @@ use hashbrown::HashMap;
 use serde::{ser, Deserialize};
 
 use crate::{
-    de::{Feature, GeozeroFeature},
+    de::Feature,
     error::{Error, Result},
 };
 use serde_json::Value as JsonValue;
@@ -160,7 +160,7 @@ mod test {
     use geozero::geojson::GeoJsonWriter;
     use hashbrown::HashMap;
 
-    use crate::de::{Feature, GeozeroFeature};
+    use crate::de::Feature;
 
     use super::to_geozero_datasource;
 

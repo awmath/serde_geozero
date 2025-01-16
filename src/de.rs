@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use geo::Geometry;
 use geozero::{
     error::GeozeroError, geo_types::GeoWriter, ColumnValue, FeatureAccess, FeatureProcessor,
-    FeatureProperties, GeomProcessor, GeozeroDatasource, PropertyProcessor,
+    GeomProcessor, GeozeroDatasource, PropertyProcessor,
 };
 use hashbrown::HashMap;
 use serde::{
@@ -650,7 +650,7 @@ impl GeomProcessor for GeozeroFeature {
 }
 
 impl FeatureProcessor for GeozeroFeature {
-    fn feature_begin(&mut self, idx: u64) -> geozero::error::Result<()> {
+    fn feature_begin(&mut self, _idx: u64) -> geozero::error::Result<()> {
         self.current_geometry = GeoWriter::new();
         self.current_properties = HashMap::new();
         Ok(())
@@ -675,7 +675,7 @@ pub fn feature_to_struct<'de, S: FeatureAccess, T: Deserialize<'de>>(feature: &S
 mod test {
     use super::*;
     use approx::assert_relative_eq;
-    use flatgeobuf::{FallibleStreamingIterator, FgbFeature, FgbReader};
+    use flatgeobuf::{FallibleStreamingIterator, FgbReader};
     use geo::Geometry;
     use serde::{Deserialize, Serialize};
     use std::fs::File;
