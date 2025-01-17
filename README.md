@@ -88,15 +88,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Disclaimer
-
-This isn't a fully fledged crate yet as it's still missing some functionality it seeks to provide. Work is ongoing to implement all features.
-
-## TODO
-
-- Complete serialization functionality
-- Add deserialization support for non-GeozeroDatasource formats
-- Improve error handling and messages
-- Add more examples and documentation
-
 ```
