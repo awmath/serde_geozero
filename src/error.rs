@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Error while processing the geozero source.")]
+    #[error("Error while processing the geozero source: {}.", .0.to_string())]
     GeozeroError(#[from] geozero::error::GeozeroError),
 
-    #[error(transparent)]
+    #[error("Error while serializing/deserializing: {}", .0.to_string())]
     SerdeError(#[from] serde_json::error::Error),
 
-    #[error("An error happend.")]
+    #[error("An error happend: {:?}.", .0)]
     Message(String),
 
     #[error("Unknown error")]

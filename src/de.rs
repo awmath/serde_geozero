@@ -727,6 +727,61 @@ mod test {
     }
 
     #[test]
+    #[allow(dead_code)]
+    fn deserialization_error_wrong_type() -> anyhow::Result<()> {
+        #[derive(Debug, Deserialize)]
+        struct Country {
+            geometry: Geometry,
+            name: i16,
+            id: String,
+        }
+
+        let f = File::open("test-data/countries.fgb")?;
+        let reader = FgbReader::open(f)?;
+        let mut feature_iter = reader.select_all()?;
+        let fgb_feature = feature_iter.next()?.unwrap();
+
+        let first: Result<Country> = feature_to_struct(fgb_feature);
+        assert!(first.is_err());
+        let err_msg = first.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("Antarctica"),
+            "name field content not in error message: {err_msg}"
+        );
+        assert!(
+            err_msg.contains("i16"),
+            "name field type not in error message: {err_msg}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[allow(dead_code)]
+    fn deserialization_error_missing_col() -> anyhow::Result<()> {
+        #[derive(Debug, Deserialize)]
+        struct Country {
+            geometry: Geometry,
+            name: String,
+            id: String,
+            not_there: String,
+        }
+
+        let f = File::open("test-data/countries.fgb")?;
+        let reader = FgbReader::open(f)?;
+        let mut feature_iter = reader.select_all()?;
+        let fgb_feature = feature_iter.next()?.unwrap();
+
+        let first: Result<Country> = feature_to_struct(fgb_feature);
+        assert!(first.is_err());
+        let err_msg = first.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("not_there"),
+            "not_there not in error message: {err_msg}"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn test_geojson() -> Result<()> {
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct Test {
