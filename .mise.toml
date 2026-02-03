@@ -1,0 +1,3 @@
+[tools]
+"conda:gdal" = "latest"
+rust = "1.89"
