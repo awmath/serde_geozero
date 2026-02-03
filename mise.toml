@@ -3,3 +3,6 @@
 "cargo:cargo-release" = "latest"
 "conda:gdal" = "latest"
 rust = "stable"
+
+[env]
+_.file = ".env"
