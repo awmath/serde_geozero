@@ -9,20 +9,20 @@ repository = "https://github.com/awmath/serde_geozero"
 readme = "README.md"
 
 [dependencies]
-anyhow = "1.0.94"
-geo = { version = "0.29.3", features = ["use-serde"] }
-geozero = { version = "0.14.0", default-features = false, features = [
+anyhow = "1.0.100"
+geo = { version = "0.32.0", features = ["serde"] }
+geozero = { version = "0.15.1", default-features = false, features = [
   "with-geo",
 ] }
-hashbrown = { version = "0.15.2", features = ["serde"] }
-serde = "1.0.216"
-serde_json = "1.0.133"
-thiserror = "2.0.6"
+hashbrown = { version = "0.16.1", features = ["serde"] }
+serde = "1.0.228"
+serde_json = "1.0.149"
+thiserror = "2.0.18"
 
 [dev-dependencies]
 approx = "0.5.1"
-flatgeobuf = "4.5.0"
-geozero = { version = "0.14.0", features = ["with-geojson"] }
+flatgeobuf = "6.0.1"
+geozero = { version = "0.15.1", features = ["with-geojson"] }
 
 [lints.clippy]
 pedantic = "deny"
