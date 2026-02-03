@@ -1,4 +1,5 @@
 [tools]
 "cargo:cargo-edit" = "latest"
+"cargo:cargo-release" = "latest"
 "conda:gdal" = "latest"
-rust = "1.89"
+rust = "stable"

@@ -88,4 +88,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-```
+## Notes
+
+For cargo-release to compile on Fedora 43 you will need to install the perl-Time-Piece package.
